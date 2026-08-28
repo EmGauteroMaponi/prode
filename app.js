@@ -138,12 +138,12 @@ document.getElementById('prodeForm').addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(datos)
         });
-        alert('¡Pronóstico guardado!');
+        mostrarAlerta('⚽ ¡Jugada guardada con éxito!', 'success');
         e.target.reset(); // Limpia los goles
         cargarPartidosPendientes(); // Recarga el select para que desaparezca el partido que acaba de cargar
         cargarDatosApp(); // Actualiza la tabla inferior
     } catch (error) {
-        alert('Hubo un error al guardar.');
+        mostrarAlerta('Hubo un error al guardar. Intenta de nuevo.', 'error');
     } finally {
         btn.innerText = 'Guardar Pronóstico';
     }
@@ -221,4 +221,23 @@ async function cargarDatosApp() {
         document.getElementById('rankingResultados').innerHTML = '<p>Error al cargar el ranking.</p>';
         document.getElementById('misResultados').innerHTML = '<p>Error al cargar tus pronósticos.</p>';
     }
+}
+
+// FUNCIÓN PARA MOSTRAR ALERTAS BONITAS
+function mostrarAlerta(mensaje, tipo = 'success') {
+    const toast = document.getElementById('toast');
+    
+    // Seteamos el texto y reiniciamos las clases
+    toast.innerText = mensaje;
+    toast.className = `toast ${tipo}`; 
+    
+    // Pequeño truco para que el navegador registre el cambio y anime
+    setTimeout(() => {
+        toast.classList.add('mostrar');
+    }, 10);
+
+    // Ocultar automáticamente después de 3 segundos
+    setTimeout(() => {
+        toast.classList.remove('mostrar');
+    }, 3000);
 }

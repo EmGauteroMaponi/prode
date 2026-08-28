@@ -227,3 +227,40 @@ body::before {
     border-left-color: var(--color-danger) !important;
     background-color: var(--bg-danger) !important;
 }
+/* --- Notificaciones Toast --- */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 9999;
+    /* Animación inicial oculta */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    /* Efecto Vidrio */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    pointer-events: none;
+}
+
+/* Clase para mostrarlo con animación */
+.toast.mostrar {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Colores según el tipo de mensaje */
+.toast.success {
+    background-color: rgba(40, 167, 69, 0.85);
+    border-left: 5px solid #1e7e34;
+}
+
+.toast.error {
+    background-color: rgba(220, 53, 69, 0.85);
+    border-left: 5px solid #a71d2a;
+}

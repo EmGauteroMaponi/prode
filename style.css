@@ -1,0 +1,229 @@
+
+/* Variables de Color (Light & Dark Mode) */
+:root {
+    /* Un gris un poquito más oscuro para que resalte la tarjeta blanca */
+    --bg-color: #e4e7ec; 
+    --text-color: #333;
+    /* Blanco con 50% de opacidad (antes estaba en 80%) */
+    --card-bg: rgba(255, 255, 255, 0.5); 
+    --primary-color: #1a73e8;
+    --primary-hover: #1557b0;
+    --secondary-bg: rgba(255, 255, 255, 0.6);
+    --border-color: rgba(255, 255, 255, 0.8);
+    --btn-text: #ffffff;
+    --color-success: #28a745;
+    --bg-success: rgba(40, 167, 69, 0.15);
+    --color-warning: #f57f17;
+    --bg-warning: rgba(245, 127, 23, 0.15);
+    --color-danger: #dc3545;
+    --bg-danger: rgba(220, 53, 69, 0.15);
+}
+
+[data-theme="dark"] {
+    --bg-color: #04092b; 
+    --text-color: #f8f9fa;
+    /* Azul oscuro con 70% de opacidad */
+    --card-bg: rgba(11, 17, 69, 0.7);
+    --primary-color: #00d4ff; 
+    --primary-hover: #00a3cc;
+    /* Azul secundario transparente */
+    --secondary-bg: rgba(17, 26, 97, 0.6);
+    --border-color: rgba(26, 36, 106, 0.5);
+    --btn-text: #04092b; 
+    --color-success: #00e676; /* Verde neón suave */
+    --bg-success: rgba(0, 230, 118, 0.15);
+    --color-warning: #ffd600; /* Amarillo oro */
+    --bg-warning: rgba(255, 214, 0, 0.15);
+    --color-danger: #ff5252; /* Rojo coral */
+    --bg-danger: rgba(255, 82, 82, 0.15);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 20px;
+    margin: 0;
+    transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+.container {
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+.champions-title {
+    text-align: center;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 6px; /* Letras más separadas para mayor elegancia */
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+
+.card {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    transition: background-color 0.4s ease, border-color 0.4s ease;
+    
+    /* Efecto Glassmorphism (Vidrio) */
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(3px); /* Soporte para Safari */
+}
+
+/* Inputs y Selects */
+input, select {
+    display: block;
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 12px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.score-inputs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.score-inputs input {
+    width: 40%;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.vs-text {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Botones */
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--btn-text);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+[data-theme="dark"] .btn-primary {
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    width: auto;
+    padding: 8px 15px;
+}
+
+.theme-toggle {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    width: auto;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+/* Utilidades */
+.oculto { display: none !important; }
+.header-app, .header-theme { display: flex; justify-content: space-between; align-items: center; }
+.header-theme { justify-content: flex-end; }
+.header-buttons { display: flex; gap: 10px; }
+.mt-1 { margin-top: 15px; }
+
+/* Items de Pronósticos */
+.pronostico-item {
+    background-color: var(--secondary-bg);
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Marca de agua del logo de la Champions */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    /* Usamos el archivo local que descargaste */
+    background-image: url('logo.png'); 
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 60%;
+    opacity: 0.1; 
+    z-index: -1; 
+    pointer-events: none; 
+    transition: all 0.4s ease;
+}
+
+/* Ajuste del logo para el Dark Mode */
+[data-theme="dark"] body::before {
+    opacity: 0.1; /* Un poquito más visible en fondo oscuro */
+    /* Este filtro convierte el logo oscuro en color blanco/plata */
+    filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+}
+
+/* Clases dinámicas para los resultados */
+.pts-6 {
+    border-left-color: var(--color-success) !important;
+    background-color: var(--bg-success) !important;
+}
+.pts-3 {
+    border-left-color: var(--color-warning) !important;
+    background-color: var(--bg-warning) !important;
+}
+.pts-0 {
+    border-left-color: var(--color-danger) !important;
+    background-color: var(--bg-danger) !important;
+}

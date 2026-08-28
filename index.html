@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prode con Amigos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- SECCIÓN DE LOGIN -->
+        <div id="login-section" class="card fade-in">
+            <div class="header-theme">
+                <button id="btn-theme-login" class="theme-toggle">🌙 Dark</button>
+            </div>
+            <h1 class="champions-title">Prode</h1>
+            <form id="loginForm">
+                <input type="text" id="loginUsuario" placeholder="Tu Nombre de Usuario" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <button type="submit" class="btn-primary">Entrar a la Cancha</button>
+            </form>
+            <p id="loginError" style="color: red; display: none;">Usuario o contraseña incorrectos.</p>
+        </div>
+
+        <!-- SECCIÓN PRINCIPAL DEL PRODE (Oculta al inicio) -->
+        <div id="app-section" class="oculto fade-in">
+            <div class="header-app">
+                <h1 class="champions-title">Prode</h1>
+                <div class="header-buttons">
+                    <button id="btn-theme-app" class="theme-toggle">🌙 Dark</button>
+                    <button id="btn-logout" class="btn-danger">Salir</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>⚽ Tus Pronósticos</h2>
+                <p> <strong id="nombreUsuarioUI" style="color: var(--primary-color);"></strong>, pronosticá tus resultado:</p>
+                <form id="prodeForm">
+                    <select id="partido" required>
+                        <option value="">Cargando partidos pendientes...</option>
+                    </select>
+                    
+                    <div class="score-inputs">
+                        <input type="number" id="golesLocal" placeholder="Local" min="0" required>
+                        <span class="vs-text"> VS </span>
+                        <input type="number" id="golesVisitante" placeholder="Visitante" min="0" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">Guardar Resultado</button>
+                </form>
+            </div>
+
+            <!-- RESULTADOS Y RANKING -->
+            <div class="card">
+                <h2>Tus Resultados</h2>
+                <div id="misResultados" class="resultados-container">Cargando...</div>
+            </div>
+
+            <div class="card">
+                <h2>🏆 Tabla General</h2>
+                <button onclick="cargarDatosApp()" class="btn-secondary">Actualizar Tabla</button>
+                <div id="rankingResultados" class="resultados-container mt-1">Cargando...</div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

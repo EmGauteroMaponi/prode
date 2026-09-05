@@ -70,27 +70,144 @@ async function cargarDatosApp() {
     renderMisPronosticos(datos.misPronosticos);
 }
 
+// ==========================================
+// LÓGICA DE FILTROS Y BORRADOR
+// ==========================================
+let pendientesGlobal = [];
+
+// Función auxiliar para dejar la fecha linda
+function formatearFecha(fechaStr) {
+    if (!fechaStr) return 'Sin fecha definida';
+    const fechaObj = new Date(fechaStr);
+    fechaObj.setMinutes(fechaObj.getMinutes() + fechaObj.getTimezoneOffset());
+    return fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// 1. Recibir los datos del backend
 function renderPartidosPendientes(pendientes) {
     const cardCarga = document.getElementById('card-carga-pronosticos');
-    const selectPartido = document.getElementById('partido');
-    selectPartido.innerHTML = ''; 
-    
-    if (pendientes.length === 0) {
-        // Si no hay partidos, ocultamos TODA la tarjeta de carga
+
+    // Guardamos en memoria con la fecha ya formateada
+    pendientesGlobal = pendientes.map(p => ({
+        partido: p.partido,
+        fechaFormateada: formatearFecha(p.fecha)
+    }));
+
+    if (pendientesGlobal.length === 0) {
         cardCarga.classList.add('oculto');
     } else {
-        // Si hay partidos, nos aseguramos de que la tarjeta sea visible
         cardCarga.classList.remove('oculto');
+        pintarFiltroFechas();
+    }
+}
+
+// 2. Pintar el selector de Fechas
+function pintarFiltroFechas() {
+    const selectFecha = document.getElementById('filtroFecha');
+    const fechaActualSeleccionada = selectFecha.value; // Guardamos lo que tenía seleccionado
+
+    // Sacamos las fechas únicas (sin repetir)
+    const fechasUnicas = [...new Set(pendientesGlobal.map(p => p.fechaFormateada))];
+
+    selectFecha.innerHTML = '<option value="">Todas las fechas...</option>';
+    
+    fechasUnicas.forEach(fecha => {
+        const selected = (fecha === fechaActualSeleccionada) ? 'selected' : '';
+        selectFecha.innerHTML += `<option value="${fecha}" ${selected}>${fecha}</option>`;
+    });
+
+    pintarSelectPartidos(); // Actualizamos los partidos según esta fecha
+}
+
+// 3. Pintar los partidos filtrados
+function pintarSelectPartidos() {
+    const selectFecha = document.getElementById('filtroFecha');
+    const selectPartido = document.getElementById('partido');
+    const fechaFiltrada = selectFecha.value;
+
+    selectPartido.innerHTML = '<option value="">Selecciona un partido...</option>';
+
+    // Filtramos los partidos por la fecha elegida (o todos si no eligió nada)
+    const partidosAMostrar = fechaFiltrada 
+        ? pendientesGlobal.filter(p => p.fechaFormateada === fechaFiltrada) 
+        : pendientesGlobal;
+
+    if (partidosAMostrar.length === 0) {
+        selectPartido.innerHTML = '<option value="">No hay partidos para esta fecha</option>';
+        selectPartido.disabled = true;
+    } else {
         selectPartido.disabled = false;
-        
-        pendientes.forEach(partido => {
-            const opcion = document.createElement('option');
-            opcion.value = partido;
-            opcion.innerText = partido;
-            selectPartido.appendChild(opcion);
+        partidosAMostrar.forEach(p => {
+            selectPartido.innerHTML += `<option value="${p.partido}">${p.partido}</option>`;
         });
     }
 }
+
+// Escuchar los cambios en el filtro de fecha
+document.getElementById('filtroFecha').addEventListener('change', pintarSelectPartidos);
+
+// ==========================================
+// 4. Agregar al Borrador
+// ==========================================
+document.getElementById('prodeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    // GUARDAMOS la fecha que estaba seleccionada antes de hacer nada
+    const selectFecha = document.getElementById('filtroFecha');
+    const fechaElegida = selectFecha.value; 
+    
+    const partidoSeleccionado = document.getElementById('partido').value;
+    
+    // Validación de seguridad por si falla el selector
+    if (!partidoSeleccionado) {
+        mostrarAlerta('Por favor, selecciona un partido válido.', 'error');
+        return;
+    }
+
+    const partidoObj = pendientesGlobal.find(p => p.partido === partidoSeleccionado);
+    
+    borradorJugadas.push({
+        partido: partidoSeleccionado,
+        golesLocal: document.getElementById('golesLocal').value,
+        golesVisitante: document.getElementById('golesVisitante').value,
+        fechaFormateada: partidoObj.fechaFormateada 
+    });
+    
+    pendientesGlobal = pendientesGlobal.filter(p => p.partido !== partidoSeleccionado);
+    
+    // Limpiamos todo el formulario
+    e.target.reset();
+    
+    // RESTAURAMOS la fecha en el filtro
+    selectFecha.value = fechaElegida;
+    
+    actualizarBorradorUI();
+    
+    if (pendientesGlobal.length === 0) {
+        document.getElementById('card-carga-pronosticos').classList.add('oculto');
+    } else {
+        pintarFiltroFechas(); 
+    }
+    
+    mostrarAlerta('Agregado al borrador', 'success');
+});
+
+// 5. Eliminar del Borrador
+window.eliminarDelBorrador = function(index) {
+    const jugadaEliminada = borradorJugadas[index];
+    
+    // Lo devolvemos a la lista global con su fecha correspondiente
+    pendientesGlobal.push({
+        partido: jugadaEliminada.partido,
+        fechaFormateada: jugadaEliminada.fechaFormateada
+    });
+    
+    borradorJugadas.splice(index, 1);
+    
+    actualizarBorradorUI();
+    document.getElementById('card-carga-pronosticos').classList.remove('oculto');
+    pintarFiltroFechas(); // Se vuelve a agregar la fecha si era necesaria
+};
 
 function renderPronosticosEspeciales(esp) {
     const llenarSelect = (idSelect, lista, valorGuardado, estaHabilitado) => {
@@ -271,23 +388,6 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     document.getElementById('loginForm').reset();
 });
 
-// Agregar al Borrador
-document.getElementById('prodeForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const selectPartido = document.getElementById('partido');
-    const partidoSeleccionado = selectPartido.value;
-    
-    borradorJugadas.push({
-        partido: partidoSeleccionado,
-        golesLocal: document.getElementById('golesLocal').value,
-        golesVisitante: document.getElementById('golesVisitante').value
-    });
-    
-    selectPartido.querySelector(`option[value="${partidoSeleccionado}"]`).remove();
-    e.target.reset();
-    actualizarBorradorUI();
-    mostrarAlerta('Agregado al borrador', 'success');
-});
 
 // UI del Borrador
 function actualizarBorradorUI() {

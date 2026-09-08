@@ -1,7 +1,8 @@
 // ==========================================
 // 1. CONFIGURACIÓN Y TEMA
 // ==========================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbxJ1v6OSw_FoSP4ENN74UImNwCr7lX9h_VKJTM7jANlvIJ4R93hsK9cZ2hAEDgt9KjKiQ/exec';
+// ¡IMPORTANTE! Reemplazá esto por tu NUEVA URL de implementación si creaste una.
+const API_URL = 'https://script.google.com/macros/s/AKfycbzMPcGN3rTC7FzxhlsiSxZtIrKpCBfRDbs_yPng2PebtWEQxRft0unbMdLrP_VM7vhM/exec';
 
 const temaActual = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', temaActual);
@@ -30,6 +31,7 @@ document.getElementById('btn-theme-app').addEventListener('click', toggleTheme);
 // ==========================================
 let usuarioLogueado = localStorage.getItem('prodeUsuario');
 let borradorJugadas = [];
+let pendientesGlobal = [];
 
 window.addEventListener('DOMContentLoaded', async () => {
     if (usuarioLogueado) {
@@ -42,7 +44,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 async function inicializarApp() {
     mostrarLoader();
     try {
-        // Un solo llamado al servidor que trae todo el contexto
         await cargarDatosApp();
         document.getElementById('login-section').classList.add('oculto');
         document.getElementById('app-section').classList.remove('oculto');
@@ -63,34 +64,32 @@ async function cargarDatosApp() {
     const respuesta = await fetch(urlPeticion);
     const datos = await respuesta.json();
 
-    // Delegamos el pintado a funciones específicas y pequeñas
     renderPartidosPendientes(datos.pendientes);
     renderPronosticosEspeciales(datos.especiales);
     renderRanking(datos.ranking);
     renderMisPronosticos(datos.misPronosticos);
 }
 
-// ==========================================
-// LÓGICA DE FILTROS Y BORRADOR
-// ==========================================
-let pendientesGlobal = [];
-
-// Función auxiliar para dejar la fecha linda
-function formatearFecha(fechaStr) {
+// Función auxiliar para dejar la fecha linda (¡Ahora con horarios!)
+function formatearFecha(fechaStr, horarioStr) {
     if (!fechaStr) return 'Sin fecha definida';
     const fechaObj = new Date(fechaStr);
     fechaObj.setMinutes(fechaObj.getMinutes() + fechaObj.getTimezoneOffset());
-    return fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    
+    let textoFecha = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    if (horarioStr) {
+        textoFecha += ` - ${horarioStr}hs`;
+    }
+    return textoFecha;
 }
 
-// 1. Recibir los datos del backend
+// Renderizar Pendientes (y cargar Filtro)
 function renderPartidosPendientes(pendientes) {
     const cardCarga = document.getElementById('card-carga-pronosticos');
 
-    // Guardamos en memoria con la fecha ya formateada
     pendientesGlobal = pendientes.map(p => ({
         partido: p.partido,
-        fechaFormateada: formatearFecha(p.fecha)
+        fechaFormateada: formatearFecha(p.fecha, p.horario)
     }));
 
     if (pendientesGlobal.length === 0) {
@@ -101,14 +100,11 @@ function renderPartidosPendientes(pendientes) {
     }
 }
 
-// 2. Pintar el selector de Fechas
 function pintarFiltroFechas() {
     const selectFecha = document.getElementById('filtroFecha');
-    const fechaActualSeleccionada = selectFecha.value; // Guardamos lo que tenía seleccionado
+    const fechaActualSeleccionada = selectFecha.value; 
 
-    // Sacamos las fechas únicas (sin repetir)
     const fechasUnicas = [...new Set(pendientesGlobal.map(p => p.fechaFormateada))];
-
     selectFecha.innerHTML = '<option value="">Todas las fechas...</option>';
     
     fechasUnicas.forEach(fecha => {
@@ -116,10 +112,9 @@ function pintarFiltroFechas() {
         selectFecha.innerHTML += `<option value="${fecha}" ${selected}>${fecha}</option>`;
     });
 
-    pintarSelectPartidos(); // Actualizamos los partidos según esta fecha
+    pintarSelectPartidos(); 
 }
 
-// 3. Pintar los partidos filtrados
 function pintarSelectPartidos() {
     const selectFecha = document.getElementById('filtroFecha');
     const selectPartido = document.getElementById('partido');
@@ -127,7 +122,6 @@ function pintarSelectPartidos() {
 
     selectPartido.innerHTML = '<option value="">Selecciona un partido...</option>';
 
-    // Filtramos los partidos por la fecha elegida (o todos si no eligió nada)
     const partidosAMostrar = fechaFiltrada 
         ? pendientesGlobal.filter(p => p.fechaFormateada === fechaFiltrada) 
         : pendientesGlobal;
@@ -143,71 +137,7 @@ function pintarSelectPartidos() {
     }
 }
 
-// Escuchar los cambios en el filtro de fecha
 document.getElementById('filtroFecha').addEventListener('change', pintarSelectPartidos);
-
-// ==========================================
-// 4. Agregar al Borrador
-// ==========================================
-document.getElementById('prodeForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // GUARDAMOS la fecha que estaba seleccionada antes de hacer nada
-    const selectFecha = document.getElementById('filtroFecha');
-    const fechaElegida = selectFecha.value; 
-    
-    const partidoSeleccionado = document.getElementById('partido').value;
-    
-    // Validación de seguridad por si falla el selector
-    if (!partidoSeleccionado) {
-        mostrarAlerta('Por favor, selecciona un partido válido.', 'error');
-        return;
-    }
-
-    const partidoObj = pendientesGlobal.find(p => p.partido === partidoSeleccionado);
-    
-    borradorJugadas.push({
-        partido: partidoSeleccionado,
-        golesLocal: document.getElementById('golesLocal').value,
-        golesVisitante: document.getElementById('golesVisitante').value,
-        fechaFormateada: partidoObj.fechaFormateada 
-    });
-    
-    pendientesGlobal = pendientesGlobal.filter(p => p.partido !== partidoSeleccionado);
-    
-    // Limpiamos todo el formulario
-    e.target.reset();
-    
-    // RESTAURAMOS la fecha en el filtro
-    selectFecha.value = fechaElegida;
-    
-    actualizarBorradorUI();
-    
-    if (pendientesGlobal.length === 0) {
-        document.getElementById('card-carga-pronosticos').classList.add('oculto');
-    } else {
-        pintarFiltroFechas(); 
-    }
-    
-    mostrarAlerta('Agregado al borrador', 'success');
-});
-
-// 5. Eliminar del Borrador
-window.eliminarDelBorrador = function(index) {
-    const jugadaEliminada = borradorJugadas[index];
-    
-    // Lo devolvemos a la lista global con su fecha correspondiente
-    pendientesGlobal.push({
-        partido: jugadaEliminada.partido,
-        fechaFormateada: jugadaEliminada.fechaFormateada
-    });
-    
-    borradorJugadas.splice(index, 1);
-    
-    actualizarBorradorUI();
-    document.getElementById('card-carga-pronosticos').classList.remove('oculto');
-    pintarFiltroFechas(); // Se vuelve a agregar la fecha si era necesaria
-};
 
 function renderPronosticosEspeciales(esp) {
     const llenarSelect = (idSelect, lista, valorGuardado, estaHabilitado) => {
@@ -277,6 +207,9 @@ function renderMisPronosticos(misPronosticos) {
                     const fechaObj = new Date(item.fecha);
                     fechaObj.setMinutes(fechaObj.getMinutes() + fechaObj.getTimezoneOffset());
                     fechaFormateada = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    if (item.horario) {
+                        fechaFormateada += ` a las ${item.horario}hs`;
+                    }
                 }
                 textoAdicional = `<br><small style="opacity: 0.9;">⏳ Se juega el: <strong>${fechaFormateada}</strong></small>`;
             }
@@ -311,8 +244,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
     const user = document.getElementById('loginUsuario').value;
     const passPlana = document.getElementById('loginPassword').value;
-    
-    // OFUSCACIÓN SIMPLE (Base64)
     const passOfuscada = btoa(passPlana); 
 
     try {
@@ -326,12 +257,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         if (resultado.success) {
             usuarioLogueado = user;
             
-            // Verificamos si usó la contraseña por defecto "123456" (MTIzNDU2)
             if (passOfuscada === 'MTIzNDU2') {
-                // Le mostramos el modal obligatorio y NO guardamos sesión todavía
                 document.getElementById('modal-password').classList.remove('oculto');
             } else {
-                // Flujo normal si ya tiene su contraseña propia
                 localStorage.setItem('prodeUsuario', user); 
                 document.getElementById('nombreUsuarioUI').innerText = usuarioLogueado.toUpperCase();
                 await inicializarApp();
@@ -354,7 +282,7 @@ document.getElementById('formCambioPassword').addEventListener('submit', async (
     btn.disabled = true;
 
     const nuevaPassPlana = document.getElementById('nuevaPassword').value;
-    const nuevaPassOfuscada = btoa(nuevaPassPlana); // Ofuscamos la nueva
+    const nuevaPassOfuscada = btoa(nuevaPassPlana); 
 
     try {
         await fetch(API_URL, {
@@ -363,12 +291,10 @@ document.getElementById('formCambioPassword').addEventListener('submit', async (
             body: JSON.stringify({ action: 'cambiarPassword', usuario: usuarioLogueado, nuevaPassword: nuevaPassOfuscada })
         });
 
-        // Ocultamos el modal
         document.getElementById('modal-password').classList.add('oculto');
-        
-        // Ahora sí, guardamos la sesión y lo dejamos pasar
         localStorage.setItem('prodeUsuario', usuarioLogueado);
         document.getElementById('nombreUsuarioUI').innerText = usuarioLogueado.toUpperCase();
+        
         await inicializarApp();
         mostrarAlerta('Contraseña actualizada con éxito', 'success');
         
@@ -388,6 +314,43 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     document.getElementById('loginForm').reset();
 });
 
+// Agregar al Borrador
+document.getElementById('prodeForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const selectFecha = document.getElementById('filtroFecha');
+    const fechaElegida = selectFecha.value; 
+    const partidoSeleccionado = document.getElementById('partido').value;
+    
+    if (!partidoSeleccionado) {
+        mostrarAlerta('Por favor, selecciona un partido válido.', 'error');
+        return;
+    }
+
+    const partidoObj = pendientesGlobal.find(p => p.partido === partidoSeleccionado);
+    
+    borradorJugadas.push({
+        partido: partidoSeleccionado,
+        golesLocal: document.getElementById('golesLocal').value,
+        golesVisitante: document.getElementById('golesVisitante').value,
+        fechaFormateada: partidoObj.fechaFormateada 
+    });
+    
+    pendientesGlobal = pendientesGlobal.filter(p => p.partido !== partidoSeleccionado);
+    
+    e.target.reset();
+    selectFecha.value = fechaElegida;
+    
+    actualizarBorradorUI();
+    
+    if (pendientesGlobal.length === 0) {
+        document.getElementById('card-carga-pronosticos').classList.add('oculto');
+    } else {
+        pintarFiltroFechas(); 
+    }
+    
+    mostrarAlerta('Agregado al borrador', 'success');
+});
 
 // UI del Borrador
 function actualizarBorradorUI() {
@@ -411,13 +374,17 @@ function actualizarBorradorUI() {
 // Eliminar del Borrador
 window.eliminarDelBorrador = function(index) {
     const jugadaEliminada = borradorJugadas[index];
-    const option = document.createElement('option');
-    option.value = jugadaEliminada.partido;
-    option.innerText = jugadaEliminada.partido;
-    document.getElementById('partido').appendChild(option);
+    
+    pendientesGlobal.push({
+        partido: jugadaEliminada.partido,
+        fechaFormateada: jugadaEliminada.fechaFormateada
+    });
     
     borradorJugadas.splice(index, 1);
+    
     actualizarBorradorUI();
+    document.getElementById('card-carga-pronosticos').classList.remove('oculto');
+    pintarFiltroFechas(); 
 };
 
 // Confirmar Borrador
@@ -437,7 +404,6 @@ document.getElementById('btn-confirm-draft').addEventListener('click', async () 
         borradorJugadas = []; 
         actualizarBorradorUI();
         
-        // Refrescamos toda la info visual de un solo golpe
         await cargarDatosApp(); 
     } catch (error) {
         mostrarAlerta('Hubo un error al enviar el borrador. Intenta de nuevo.', 'error');

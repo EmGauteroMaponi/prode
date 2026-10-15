@@ -3,7 +3,7 @@
 // ==========================================
 // ¡IMPORTANTE! Reemplazá esto por tu NUEVA URL de implementación si creaste una.
 const API_URL = 'https://script.google.com/macros/s/AKfycbzMPcGN3rTC7FzxhlsiSxZtIrKpCBfRDbs_yPng2PebtWEQxRft0unbMdLrP_VM7vhM/exec';
-
+let misPronosticosGlobal = [];
 const temaActual = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', temaActual);
 actualizarBotonesTema(temaActual);
@@ -67,8 +67,55 @@ async function cargarDatosApp() {
     renderPartidosPendientes(datos.pendientes);
     renderPronosticosEspeciales(datos.especiales);
     renderRanking(datos.ranking);
-    renderMisPronosticos(datos.misPronosticos);
+    
+    // Preparamos los pronósticos para poder filtrarlos
+    misPronosticosGlobal = preprocesarMisPronosticos(datos.misPronosticos);
+    pintarFiltroMisPronosticos();
+    renderMisPronosticos(misPronosticosGlobal);
 }
+
+function preprocesarMisPronosticos(pronosticos) {
+    return pronosticos.map(item => {
+        let fechaFiltro = 'Sin fecha';
+        let fechaFormateada = 'Fecha a definir';
+        
+        if (item.fecha) {
+            const fechaObj = new Date(item.fecha);
+            fechaObj.setMinutes(fechaObj.getMinutes() + fechaObj.getTimezoneOffset());
+            fechaFiltro = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            fechaFormateada = fechaFiltro;
+            if (item.horario) {
+                fechaFormateada += ` a las ${item.horario}hs`;
+            }
+        }
+        return { ...item, fechaFiltro, fechaFormateada };
+    });
+}
+
+function pintarFiltroMisPronosticos() {
+    const selectFiltro = document.getElementById('filtroFechaMisPronosticos');
+    const valorActual = selectFiltro.value;
+    
+    // Extraemos solo las fechas únicas donde hay pronósticos
+    const fechasUnicas = [...new Set(misPronosticosGlobal.map(p => p.fechaFiltro))];
+    
+    selectFiltro.innerHTML = '<option value="">Todas las fechas...</option>';
+    fechasUnicas.forEach(fecha => {
+        const selected = fecha === valorActual ? 'selected' : '';
+        selectFiltro.innerHTML += `<option value="${fecha}" ${selected}>${fecha}</option>`;
+    });
+}
+
+// Evento que escucha cuando cambiás de fecha en el desplegable
+document.getElementById('filtroFechaMisPronosticos').addEventListener('change', (e) => {
+    const fechaElegida = e.target.value;
+    if (fechaElegida === "") {
+        renderMisPronosticos(misPronosticosGlobal); // Mostrar todos
+    } else {
+        const filtrados = misPronosticosGlobal.filter(p => p.fechaFiltro === fechaElegida);
+        renderMisPronosticos(filtrados); // Mostrar solo los de la fecha
+    }
+});
 
 // Función auxiliar para dejar la fecha linda (¡Ahora con horarios!)
 function formatearFecha(fechaStr, horarioStr) {
@@ -188,10 +235,10 @@ function renderRanking(ranking) {
     document.getElementById('rankingResultados').innerHTML = htmlRanking;
 }
 
-function renderMisPronosticos(misPronosticos) {
+function renderMisPronosticos(misPronosticosAMostrar) {
     let htmlMisPronosticos = '';
-    if (misPronosticos.length > 0) {
-        misPronosticos.forEach(item => {
+    if (misPronosticosAMostrar.length > 0) {
+        misPronosticosAMostrar.forEach(item => {
             let claseColor = '';
             let textoAdicional = ''; 
             
@@ -202,16 +249,7 @@ function renderMisPronosticos(misPronosticos) {
                 
                 textoAdicional = `<br><small style="opacity: 0.9;">✅ Resultado Final: <strong>${item.golesLocalReal} - ${item.golesVisitanteReal}</strong></small>`;
             } else {
-                let fechaFormateada = 'Fecha a definir';
-                if (item.fecha) {
-                    const fechaObj = new Date(item.fecha);
-                    fechaObj.setMinutes(fechaObj.getMinutes() + fechaObj.getTimezoneOffset());
-                    fechaFormateada = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    if (item.horario) {
-                        fechaFormateada += ` a las ${item.horario}hs`;
-                    }
-                }
-                textoAdicional = `<br><small style="opacity: 0.9;">⏳ Se juega el: <strong>${fechaFormateada}</strong></small>`;
+                textoAdicional = `<br><small style="opacity: 0.9;">⏳ Se juega el: <strong>${item.fechaFormateada}</strong></small>`;
             }
 
             htmlMisPronosticos += `
@@ -224,7 +262,7 @@ function renderMisPronosticos(misPronosticos) {
             `;
         });
     } else {
-        htmlMisPronosticos = '<p>Aún no cargaste ningún pronóstico.</p>';
+        htmlMisPronosticos = '<p>No hay pronósticos para mostrar.</p>';
     }
     document.getElementById('misResultados').innerHTML = htmlMisPronosticos;
 }
